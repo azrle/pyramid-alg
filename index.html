@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Pyramid Algorithm</title>
+	<meta charset="utf-8">
+	<link href="css/bootstrap.css" rel="stylesheet">
+	<script type="text/javascript" src="js/d3.v2.min.js"></script>
+	<style type="text/css">
+		html, body {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			padding: 5px;
+			font-family: sans-serif;
+		}
+		.ch {
+			stroke: white;
+		}
+		text{
+			stroke-width: 0px;
+			font: 13px sans-serif;
+			font-weight: 400;
+		}
+		#control{
+			margin: 10px 0px;
+		}
+
+	</style>
+</head>
+<body>
+	<h2>Pyramid Algorithm</h2>
+	<div id="control">
+		<div>
+			<label for="t">t=</lable><input type="text" id="t" value="10" />
+		</div>
+		<div>
+			<label for="m">m=</lable><input type="text" id="m" value="5" />
+		</div>
+		<div>
+			<label for="r">r=</lable><input type="text" id="r" value="3" />
+		</div>
+		<div>
+			<button class="btn" onclick="init()">Start</button>
+		</div>
+	</div>
+	<div id="graph"></div>
+	<script type="text/javascript">
+		var MAX = 15, MIN = 5;
+		var dt = [],
+			m =0,
+			t =0,
+			r =0,
+			ch = [];
+		
+		function alg() {
+			dt.sort(function(x, y) {
+				return x.p/x.s-y.p/y.s;
+			});
+			
+			ch = d3.range(m).map(function() { return []; });
+			
+			var i = 0, ave = 0, j = 0, p = 1, thre = 1/m;
+			
+			while (i<t) {
+				if (ave <= thre) {
+					ave += dt[i].p;
+					ch[j].push(dt[i]); dt[i].c = j;
+					++i;
+				} else {
+					p -= ave;
+					ave = 0;
+					thre = p/(m-(j+1));
+					console.log(thre);
+					++j;
+				}
+			}
+		}
+		
+		function init() {
+			t = document.getElementById("t").value *1;
+			m = document.getElementById("m").value *1;
+			r = document.getElementById("r").value *1;
+			
+			dt = [];
+			ch = [];
+			d3.selectAll('table').remove();
+			d3.selectAll('svg').remove();
+			
+			var sum = 0;
+			dt = d3.range(t).map(function (o, i){ 
+				var t = Math.random();  
+				sum += t; 
+				return {i:i, p: t, s: Math.random()*MAX+MIN, c: -1, req: false}; 
+			});
+			dt.forEach(function(o, i) { dt[i].p =  o.p / sum; });
+			
+			var tmp = d3.range(t).map(function (o, i){
+				return {i:i, k:Math.random()};
+			});
+			tmp.sort(function(a,b) { return a.k-b.k; });
+			
+			for (var i=0; i<r; ++i) {
+				dt[tmp[i].i].req = true;
+			}
+			
+			
+			alg();
+			
+			var offset = 0;
+			var mw = 0;
+			
+			var vis = d3.select('#graph').append('svg:svg').attr('height', m*65);
+			var chs = vis.selectAll('g')
+						.data(ch)
+						.enter()
+							.append('g')
+							.attr('class', 'ch');
+			chs.append('text')
+				.text(function (d, i) { return 'CH '+i; })
+				.attr('x', 0)
+				.attr('y', function (d,i) { return 18+i*62; } )
+				.attr('stroke', '#000')
+				.attr('text-anchor', 'start');
+			
+			// last tick
+			chs.append('text')
+				.select(function(d) { if (d.length > 0) return this; })
+				.text(function (d) { sum = 0; d.forEach(function(o){ sum+=o.s; }); return sum.toFixed(2); })
+				.attr('x', function (d) { 
+						sum = 0; 
+						d.forEach(function(o){ 
+							sum+=o.s; 
+						}); 
+						if (sum*(200/MAX)+35+100>mw) { 
+							mw = sum*(200/MAX)+35+100; 
+							vis.attr('width', mw); 
+						} 
+						return sum*(200/MAX)+35;
+				})
+				.attr('y', function (d, i) { return 45+i*60; } )
+				.attr('stroke', '#000')
+				.attr('text-anchor', 'end');
+			
+			// bar
+			chs.selectAll('rect')
+				.data(function(d) { return d; })
+				.enter()
+				.append('rect')
+					.attr('x', function(d, i) { if (i==0) offset = 30; var x=offset; offset+=d.s*(200/MAX); return x; })
+					.attr('y', function(d) { return d.c * 60; })
+					.attr('width', function(d) { return d.s*(200/MAX); })
+					.attr('height', 30)
+					.attr('fill', function(d) { return d.req?'steelblue':'#ccc'; });
+			
+			// data-label
+			chs.selectAll('text.c')
+				.data(function(d) { return d; })
+				.enter()
+				.append('text')
+					.attr('class', 'c')
+					.attr('x', function(d, i) { if (i==0) offset = 35; var x=offset; offset+=d.s*(200/MAX); return x; })
+					.attr('y', function(d) { return 18+ d.c * 60; })
+					.text(function(d) {return 'd'+d.i;} )
+					.attr('stroke', '#000')
+					.attr('text-anchor', 'start');
+			
+			// tick
+			var offset2;
+			chs.selectAll('text.t')
+				.data(function(d) { return d; })
+				.enter()
+				.append('text')
+					.attr('class', 't')
+					.attr('x', function(d, i) { if (i==0) offset = 35; var x=offset; offset+=d.s*(200/MAX); return x; })
+					.attr('y', function(d) { return 45+d.c * 60; })
+					.text(function(d, i) { if (i==0) offset2 = 0; var x=offset2; offset2+=d.s; return x.toFixed(2); } )
+					.attr('stroke', '#000')
+					.attr('text-anchor', 'start');
+					
+					
+			// data
+			var trs = d3.select('#graph').insert('table').attr('class', 'table table-bordered')
+				.selectAll('tr')
+				.data(dt)
+				.enter().append('tr');
+			trs.append('td').text(function(d) { return 'd'+d.i;} );
+			trs.append('td').text(function(d) { return d.p;} );
+			trs.append('td').text(function(d) { return d.s;} );
+			trs.append('td').text(function(d) { return d.p/d.s;} );
+			
+			var th = d3.select('table').insert('tr', 'tr');
+			th.append('td').text('Data');
+			th.append('td').text('Pi');
+			th.append('td').text('Si');
+			th.append('td').text('Pi/Si');
+			
+			
+			
+		}
+		
+	</script>
+	<p style="color: #aaa; font-size: 12px; float: right; padding: 20px 3px;">&copy;Azrle 21#</p>
+</body>
+</html>
