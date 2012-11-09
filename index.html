@@ -90,7 +90,7 @@
 			dt = d3.range(t).map(function (o, i){ 
 				var t = Math.random();  
 				sum += t; 
-				return {i:i, p: t, s: Math.random()*MAX+MIN, c: -1, req: false}; 
+				return {i:i, p: t, s: Math.round(Math.random()*MAX+MIN), c: -1, req: false}; 
 			});
 			dt.forEach(function(o, i) { dt[i].p =  o.p / sum; });
 			
@@ -125,7 +125,7 @@
 			// last tick
 			chs.append('text')
 				.select(function(d) { if (d.length > 0) return this; })
-				.text(function (d) { sum = 0; d.forEach(function(o){ sum+=o.s; }); return sum.toFixed(2); })
+				.text(function (d) { sum = 0; d.forEach(function(o){ sum+=o.s; }); return sum; })
 				.attr('x', function (d) { 
 						sum = 0; 
 						d.forEach(function(o){ 
@@ -173,7 +173,7 @@
 					.attr('class', 't')
 					.attr('x', function(d, i) { if (i==0) offset = 35; var x=offset; offset+=d.s*(200/MAX); return x; })
 					.attr('y', function(d) { return 45+d.c * 60; })
-					.text(function(d, i) { if (i==0) offset2 = 0; var x=offset2; offset2+=d.s; return x.toFixed(2); } )
+					.text(function(d, i) { if (i==0) offset2 = 0; var x=offset2; offset2+=d.s; return x; } )
 					.attr('stroke', '#000')
 					.attr('text-anchor', 'start');
 					
